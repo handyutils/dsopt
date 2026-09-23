@@ -452,13 +452,18 @@ mod tests {
     }
 
     #[test]
-    fn refuses_to_delete_protected_and_root_directories() {
+    fn refuses_to_delete_protected_and_missing_directories() {
         assert!(!is_safe_candidate(Path::new("/"), Path::new("/")));
         assert!(!is_safe_candidate(Path::new("/Users"), Path::new("/")));
         assert!(!is_safe_candidate(
             Path::new("/definitely/not/here"),
             Path::new("/")
         ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn accepts_a_real_directory_under_the_scan_root() {
         assert!(is_safe_candidate(Path::new("/tmp"), Path::new("/")));
     }
 }
