@@ -94,10 +94,10 @@ fn deduplicates_candidates_that_share_a_filesystem_identity() {
                 path: "/Users/musichen/project/target".into(),
                 size_bytes: 42,
             },
-            FileIdentity {
+            Some(FileIdentity {
                 device: 7,
                 inode: 99,
-            },
+            }),
         ),
         (
             Candidate {
@@ -105,10 +105,10 @@ fn deduplicates_candidates_that_share_a_filesystem_identity() {
                 path: "/System/Volumes/Data/Users/musichen/project/target".into(),
                 size_bytes: 42,
             },
-            FileIdentity {
+            Some(FileIdentity {
                 device: 7,
                 inode: 99,
-            },
+            }),
         ),
     ];
 
@@ -119,6 +119,26 @@ fn deduplicates_candidates_that_share_a_filesystem_identity() {
         unique[0].path,
         std::path::PathBuf::from("/Users/musichen/project/target")
     );
+}
+
+#[test]
+fn keeps_candidates_that_have_no_filesystem_identity() {
+    // Windows and some filesystems report no (device, inode). Those candidates
+    // must still be surfaced, not silently dropped.
+    let candidates = vec![(
+        Candidate {
+            kind: CandidateKind::NodeModules,
+            path: "/somewhere/node_modules".into(),
+            size_bytes: 7,
+        },
+        None,
+    )];
+
+    let unique = deduplicate_candidates(candidates);
+
+    assert_eq!(unique.len(), 1);
+    assert_eq!(unique[0].size_bytes, 7);
+    assert_eq!(unique[0].kind, CandidateKind::NodeModules);
 }
 
 #[test]

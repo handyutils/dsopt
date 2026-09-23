@@ -215,7 +215,7 @@ fn collect_candidates(
     tree: &DataTree<OsStringDisplay, Bytes>,
     path: &Path,
     inside_candidate: bool,
-    candidates: &mut Vec<(Candidate, FileIdentity)>,
+    candidates: &mut Vec<(Candidate, Option<FileIdentity>)>,
 ) {
     let current_path = if path.as_os_str().is_empty() {
         PathBuf::from(tree.name().as_os_str())
@@ -224,16 +224,15 @@ fn collect_candidates(
     };
     let kind = candidate_kind(&current_path);
     if let Some(kind) = kind.filter(|_| !inside_candidate) {
-        if let Some(identity) = file_identity(&current_path) {
-            candidates.push((
-                Candidate {
-                    kind,
-                    path: current_path,
-                    size_bytes: tree.size().inner(),
-                },
-                identity,
-            ));
-        }
+        let identity = file_identity(&current_path);
+        candidates.push((
+            Candidate {
+                kind,
+                path: current_path,
+                size_bytes: tree.size().inner(),
+            },
+            identity,
+        ));
         return;
     }
     for child in tree.children() {
@@ -255,11 +254,20 @@ fn candidate_kind(path: &Path) -> Option<CandidateKind> {
 }
 
 /// Keep only the first candidate for each `(device, inode)` pair.
-pub fn deduplicate_candidates(candidates: Vec<(Candidate, FileIdentity)>) -> Vec<Candidate> {
+///
+/// Candidates without a filesystem identity (Windows, or a directory removed
+/// mid-scan) are always kept — the identity is only used to collapse duplicates
+/// such as a macOS volume alias pointing at the same directory twice.
+pub fn deduplicate_candidates(
+    candidates: Vec<(Candidate, Option<FileIdentity>)>,
+) -> Vec<Candidate> {
     let mut identities = HashSet::new();
     candidates
         .into_iter()
-        .filter_map(|(candidate, identity)| identities.insert(identity).then_some(candidate))
+        .filter_map(|(candidate, identity)| match identity {
+            Some(identity) => identities.insert(identity).then_some(candidate),
+            None => Some(candidate),
+        })
         .collect()
 }
 
