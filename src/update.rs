@@ -51,9 +51,20 @@ pub fn current_version() -> &'static str {
 }
 
 /// Look up the newest published version of `dsopt` on crates.io.
+///
+/// crates.io answers 403 to requests without a `User-Agent`, so one is always
+/// sent; curl's own default is not accepted.
 pub fn latest_version() -> Result<String, String> {
+    let user_agent = format!("dsopt/{}", current_version());
     let output = Command::new("curl")
-        .args(["-fsSL", "--max-time", "20", CRATE_API])
+        .args([
+            "-fsSL",
+            "--max-time",
+            "20",
+            "--user-agent",
+            &user_agent,
+            CRATE_API,
+        ])
         .output()
         .map_err(|error| format!("could not run curl: {error}"))?;
     if !output.status.success() {
