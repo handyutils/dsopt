@@ -96,6 +96,8 @@ The same checks run again immediately before each delete, not only when the scan
 
 ## Development
 
+Requires Rust 1.95 or newer — `parallel-disk-usage` pulls in `sysinfo`, which raises the floor.
+
 ```bash
 cargo build            # debug binary at target/debug/dsopt
 cargo test             # unit + integration tests
