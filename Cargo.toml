@@ -2,6 +2,7 @@
 name = "dsopt"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.95"
 description = "Interactive TUI to find and reclaim disk space from node_modules and Rust target directories."
 license = "MIT"
 readme = "README.md"
