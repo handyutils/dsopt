@@ -11,7 +11,7 @@ homepage = "https://github.com/handyutils/dsopt"
 documentation = "https://docs.rs/dsopt"
 keywords = ["tui", "disk-space", "cleanup", "node_modules", "ratatui"]
 categories = ["command-line-utilities", "filesystem"]
-include = ["src/lib.rs", "src/app.rs", "src/update.rs", "dsopt.rs", "Cargo.toml", "README.md", "LICENSE"]
+include = ["src/lib.rs", "src/app.rs", "src/update.rs", "dsopt.rs", "tests/scanner.rs", "Cargo.toml", "README.md", "LICENSE"]
 
 [lib]
 name = "dsopt"
