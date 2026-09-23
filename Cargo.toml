@@ -1,0 +1,37 @@
+[package]
+name = "dsopt"
+version = "0.1.0"
+edition = "2024"
+description = "Interactive TUI to find and reclaim disk space from node_modules and Rust target directories."
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/handyutils/dsopt"
+homepage = "https://github.com/handyutils/dsopt"
+documentation = "https://docs.rs/dsopt"
+keywords = ["tui", "disk-space", "cleanup", "node_modules", "ratatui"]
+categories = ["command-line-utilities", "filesystem"]
+include = ["src/lib.rs", "src/app.rs", "src/update.rs", "dsopt.rs", "Cargo.toml", "README.md", "LICENSE"]
+
+[lib]
+name = "dsopt"
+path = "src/lib.rs"
+
+[[bin]]
+name = "dsopt"
+path = "dsopt.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+crossterm = "0.28"
+parallel-disk-usage = "=0.24.0"
+ratatui = "0.29"
+rayon = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

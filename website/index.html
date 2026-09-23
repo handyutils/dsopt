@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>dsopt — reclaim disk space from build artifacts</title>
+<meta name="description" content="dsopt is an interactive Rust TUI that finds node_modules and Rust target directories and reclaims the gigabytes they are quietly eating. Full options, docs, and install instructions." />
+<meta name="theme-color" content="#0b1220" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%233b82f6'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%230b1220'/%3E%3Cpath d='M16 3a13 13 0 0 1 11.3 6.6' stroke='%2322d3ee' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#top">
+    <svg viewBox="0 0 32 32" aria-hidden="true" class="brand-mark">
+      <circle cx="16" cy="16" r="13" fill="url(#g1)"/>
+      <circle cx="16" cy="16" r="4.5" fill="#0b1220"/>
+      <path d="M16 3a13 13 0 0 1 11.3 6.6" stroke="#22d3ee" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#8b5cf6"/>
+      </linearGradient></defs>
+    </svg>
+    <span class="brand-name">dsopt</span>
+  </a>
+  <nav class="topnav">
+    <a href="#finds">Finds</a>
+    <a href="#howto">How to use</a>
+    <a href="#options">Options</a>
+    <a href="#docs">Docs</a>
+    <a href="#install">Install</a>
+    <a class="ghost" href="https://github.com/handyutils/dsopt" target="_blank" rel="noreferrer">GitHub ↗</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Rust · ratatui · MIT</p>
+      <h1>Free your disk from<br /><span class="grad">build artifacts</span></h1>
+      <p class="lede">
+        Every project leaves behind a <code>node_modules</code> or a Rust <code>target/</code>.
+        <strong>dsopt</strong> walks your filesystem once, shows you exactly what those directories
+        cost, and reclaims the gigabytes you forgot you were storing — after asking nicely.
+      </p>
+      <div class="install-inline">
+        <code id="hero-cmd">cargo install dsopt</code>
+        <button class="copy" data-copy="cargo install dsopt" aria-label="Copy install command">copy</button>
+      </div>
+      <div class="badges">
+        <span class="badge blue">single binary</span>
+        <span class="badge cyan">no runtime deps</span>
+        <span class="badge violet">interactive TUI</span>
+        <span class="badge amber">scriptable</span>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="disk">
+        <div class="platter p1"></div>
+        <div class="platter p2"></div>
+        <div class="platter p3"></div>
+        <div class="spindle"></div>
+        <div class="arm"></div>
+      </div>
+      <p class="visual-caption">one walk · parallel threads · live counters</p>
+    </div>
+  </section>
+
+  <section class="strip">
+    <div class="stat"><span class="stat-num">–8</span><span class="stat-label">threads</span></div>
+    <div class="stat"><span class="stat-num">1</span><span class="stat-label">filesystem walk</span></div>
+    <div class="stat"><span class="stat-num">0</span><span class="stat-label">runtime dependencies</span></div>
+    <div class="stat"><span class="stat-num">✓</span><span class="stat-label">confirm before delete</span></div>
+  </section>
+
+  <section id="finds" class="section">
+    <h2><span class="accent-rule"></span> What it finds</h2>
+    <p class="section-lede">Two detectors, chosen because they are the biggest and the most disposable.</p>
+    <div class="cards two">
+      <article class="card c-blue">
+        <div class="card-icon">⬢</div>
+        <h3>JavaScript dependencies</h3>
+        <p>Any directory named <code>node_modules</code> — reinstallable in one command, so the safest
+           gigabytes on the machine to take back.</p>
+        <p class="card-meta">detector: <code>node_modules</code> · typed as <code>node_modules</code></p>
+      </article>
+      <article class="card c-violet">
+        <div class="card-icon">⚙</div>
+        <h3>Rust build output</h3>
+        <p>Directories named <code>target</code> — compiled artifacts that <code>cargo build</code>
+           will regenerate on demand.</p>
+        <p class="card-meta">detector: <code>target</code> · typed as <code>rust_target</code></p>
+      </article>
+    </div>
+    <p class="note">
+      Nested detectors collapse into their outermost parent, so one removal reclaims the whole subtree
+      instead of double-counting <code>node_modules</code> buried inside another project's dependencies.
+      Candidates are deduplicated by <code>(device, inode)</code>, which stops macOS volume aliases from
+      being counted twice.
+    </p>
+  </section>
+
+  <section id="howto" class="section">
+    <h2><span class="accent-rule"></span> How to use it</h2>
+    <p class="section-lede">Five steps from install to reclaimed space.</p>
+    <ol class="steps">
+      <li class="step">
+        <h3>Install</h3>
+        <p>One command, one binary: <code>cargo install dsopt</code>. See <a href="#install">Install</a>
+           if you would rather grab a prebuilt archive.</p>
+      </li>
+      <li class="step">
+        <h3>Open it</h3>
+        <p>Run <code>dsopt</code> with no arguments to scan the whole filesystem, or narrow the walk to
+           the directories that actually grow: <code>dsopt ~/code ~/work</code>.</p>
+      </li>
+      <li class="step">
+        <h3>Watch the scan</h3>
+        <p>The status line streams live folder, file, and byte counters while the parallel walk runs.
+           Scanning <code>/</code> on a busy machine takes a minute or two — it is not frozen.</p>
+      </li>
+      <li class="step">
+        <h3>Pick what to drop</h3>
+        <p>Candidates are sorted largest first. Move with <kbd>↑</kbd> <kbd>↓</kbd> and mark directories
+           with <kbd>Space</kbd>; <kbd>A</kbd> selects everything, <kbd>N</kbd> clears. The selection bar
+           updates the reclaimable total as you go.</p>
+      </li>
+      <li class="step">
+        <h3>Reclaim</h3>
+        <p>Press <kbd>D</kbd>, read the confirmation, and confirm with <kbd>Y</kbd>. Deletions run in the
+           background with per-directory progress. Restoration is on you: <code>npm install</code> or
+           <code>cargo build</code> rebuilds anything you removed.</p>
+      </li>
+    </ol>
+    <div class="codeblock">
+      <div class="codeblock-head"><span>shell</span><button class="copy" data-copy-target="howto-code">copy</button></div>
+      <pre id="howto-code"><code><span class="c"># the whole loop</span>
+cargo install dsopt      <span class="c"># install</span>
+dsopt ~/code             <span class="c"># scan the places that grow</span>
+<span class="c"># space to select · D to remove · Y to confirm</span></code></pre>
+    </div>
+  </section>
+
+  <section id="options" class="section">
+    <h2><span class="accent-rule"></span> Options</h2>
+    <p class="section-lede">The complete command-line surface. <code>dsopt --help</code> prints the same list.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Option</th><th>Default</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>ROOTS...</code></td><td><code>/</code></td><td>Roots to scan. Pass one or more; each is walked in turn.</td></tr>
+          <tr><td><code>--threads &lt;N&gt;</code></td><td><code>4</code></td><td>Scanner threads, 1–8. Invalid values exit with code 2.</td></tr>
+          <tr><td><code>--list</code></td><td><code>false</code></td><td>Print candidates as an aligned table instead of opening the TUI.</td></tr>
+          <tr><td><code>--json</code></td><td><code>false</code></td><td>With <code>--list</code>, emit one JSON object per line.</td></tr>
+          <tr><td><code>--update</code></td><td><code>false</code></td><td>Ask crates.io for the newest release and reinstall if it is newer.</td></tr>
+          <tr><td><code>--force</code></td><td><code>false</code></td><td>With <code>--update</code>, reinstall even when already current.</td></tr>
+          <tr><td><code>-h</code>, <code>--help</code></td><td></td><td>Print help and exit.</td></tr>
+          <tr><td><code>-V</code>, <code>--version</code></td><td></td><td>Print the version and exit.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="subhead">Cookbook</h3>
+    <div class="codeblock">
+      <div class="codeblock-head"><span>shell</span><button class="copy" data-copy-target="cookbook">copy</button></div>
+      <pre id="cookbook"><code><span class="c"># scan only home projects with more threads</span>
+dsopt ~/code --threads 8
+
+<span class="c"># biggest offenders first, no UI — pipe into head</span>
+dsopt --list ~/code | head -20
+
+<span class="c"># JSON Lines for a script or a cron job</span>
+dsopt --list --json ~/code | jq -r 'select(.size_bytes &gt; 1073741824) | .path'
+
+<span class="c"># total reclaimable across the whole disk</span>
+dsopt --list --json | jq -s 'map(.size_bytes) | add / 1e9'</code></pre>
+    </div>
+  </section>
+
+  <section id="keys" class="section">
+    <h2><span class="accent-rule"></span> Keyboard shortcuts</h2>
+    <div class="keys">
+      <div class="keyrow"><kbd>Space</kbd><span>select or unselect the highlighted directory</span></div>
+      <div class="keyrow"><kbd>A</kbd><span>select all</span></div>
+      <div class="keyrow"><kbd>N</kbd><span>select none</span></div>
+      <div class="keyrow"><kbd>D</kbd><span>remove the selected directories</span></div>
+      <div class="keyrow"><kbd>R</kbd><span>rescan the filesystem</span></div>
+      <div class="keyrow"><kbd>T</kbd><span>scanner thread settings — type a digit, <kbd>Enter</kbd> to close</span></div>
+      <div class="keyrow"><kbd>↑</kbd><kbd>↓</kbd><span>move · <kbd>PgUp</kbd><kbd>PgDn</kbd><kbd>Home</kbd><kbd>End</kbd> also work</span></div>
+      <div class="keyrow"><kbd>?</kbd><span>help overlay</span></div>
+      <div class="keyrow"><kbd>Q</kbd><span>quit (also <kbd>Ctrl</kbd>+<kbd>C</kbd>)</span></div>
+      <div class="keyrow"><kbd>Y</kbd><span>confirm removal in the dialog · <kbd>N</kbd> or <kbd>Esc</kbd> cancels</span></div>
+    </div>
+  </section>
+
+  <section id="docs" class="section">
+    <h2><span class="accent-rule"></span> Docs</h2>
+
+    <h3 class="subhead">Files and environment</h3>
+    <div class="spec-grid">
+      <div class="spec">
+        <span class="spec-label">Cache file</span>
+        <code>~/.cache/dsopt/last_scan.json</code>
+        <p>The last completed scan. Reopening dsopt loads it instantly; press <kbd>R</kbd> for a fresh walk.</p>
+      </div>
+      <div class="spec">
+        <span class="spec-label">Environment</span>
+        <code>XDG_CACHE_HOME</code>
+        <p>Respected when locating the cache; set it to move <code>last_scan.json</code> elsewhere.</p>
+      </div>
+      <div class="spec">
+        <span class="spec-label">Binary</span>
+        <code>~/.cargo/bin/dsopt</code>
+        <p>Where <code>cargo install</code> puts it. No config files, no daemons, nothing else written.</p>
+      </div>
+      <div class="spec">
+        <span class="spec-label">Exit codes</span>
+        <code>0 ok · 1 failure · 2 usage</code>
+        <p>Scan, terminal, or network failures exit 1; bad flags such as <code>--threads 9</code> exit 2.</p>
+      </div>
+    </div>
+
+    <h3 class="subhead">JSON Lines schema</h3>
+    <p class="section-lede"><code>--list --json</code> writes one object per candidate, so the output streams
+       and pipes cleanly.</p>
+    <div class="codeblock">
+      <div class="codeblock-head"><span>jsonl</span><button class="copy" data-copy-target="json-code">copy</button></div>
+      <pre id="json-code"><code>{"kind":"node_modules","path":"/Users/you/code/app/node_modules","size_bytes":412304128}
+{"kind":"rust_target","path":"/Users/you/code/api/target","size_bytes":2463961088}</code></pre>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>kind</code></td><td>string</td><td><code>node_modules</code> or <code>rust_target</code>.</td></tr>
+          <tr><td><code>path</code></td><td>string</td><td>Absolute path of the candidate directory.</td></tr>
+          <tr><td><code>size_bytes</code></td><td>number</td><td>Recursive size of the whole subtree, in bytes.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="subhead">How it works</h3>
+    <ul class="bullets">
+      <li><strong>Scan</strong> — <code>parallel-disk-usage</code> builds a size tree over each root on a
+          rayon thread pool; a second pass collects, deduplicates, and sorts candidates. Live counters
+          travel through atomics to the status line.</li>
+      <li><strong>Cache</strong> — the completed scan is written atomically (temp file, then rename) so a
+          crash mid-write cannot leave a corrupt cache.</li>
+      <li><strong>Remove</strong> — deletions run on a background thread and report per directory, so the
+          interface never blocks.</li>
+    </ul>
+
+    <h3 class="subhead">Restoring what you removed</h3>
+    <p class="section-lede">Delete freely — both detectors are regenerable.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Removed</th><th>Bring it back with</th></tr></thead>
+        <tbody>
+          <tr><td><code>node_modules</code></td><td><code>npm install</code> · <code>pnpm install</code> · <code>yarn</code> · <code>bun install</code></td></tr>
+          <tr><td><code>target/</code></td><td><code>cargo build</code> · <code>cargo check</code> (slower the first time)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="subhead">Troubleshooting</h3>
+    <div class="faq">
+      <details>
+        <summary>The scan looks frozen</summary>
+        <p>It is not. The status line streams folder, file, and byte counters plus the path currently being
+           walked. Raise the thread count with <kbd>T</kbd> if the disk is fast and the CPU is idle.</p>
+      </details>
+      <details>
+        <summary>Nothing was found</summary>
+        <p>Either you already cleaned up, or you scanned a root without projects under it. Try
+           <code>dsopt ~/code</code>, and remember the cache may be showing an older scan — press
+           <kbd>R</kbd> to rescan.</p>
+      </details>
+      <details>
+        <summary>A directory refused to delete</summary>
+        <p>The safety re-check runs immediately before every delete. Paths that resolve outside the scan
+           root, the protected system directories, virtual filesystems, and macOS volume aliases are
+           rejected by design. Permissions are the other usual cause.</p>
+      </details>
+      <details>
+        <summary>I want to start over</summary>
+        <p>Delete <code>~/.cache/dsopt/last_scan.json</code>. dsopt starts with a fresh scan next time.</p>
+      </details>
+      <details>
+        <summary>Do I need Rust installed?</summary>
+        <p>Only to build from source or to run <code>--update</code>, which shells out to
+           <code>cargo install</code>. Prebuilt archives need nothing.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section safety">
+    <h2><span class="accent-rule"></span> Safety</h2>
+    <p>
+      Removal is permanent — there is no Trash and no undo, and dsopt says so before it does anything.
+      A directory is only deleted when every one of these holds:
+    </p>
+    <ul class="checklist">
+      <li>it resolved successfully and is a real directory</li>
+      <li>it sits strictly inside the scan root, and is not the root itself</li>
+      <li>it is not <code>/</code>, <code>/System</code>, <code>/Users</code>, or <code>/Applications</code></li>
+      <li>it is not under a virtual filesystem or macOS volume alias such as <code>/dev</code>, <code>/proc</code>, <code>/sys</code>, or <code>/System/Volumes/Data</code></li>
+    </ul>
+    <p class="note">These checks are re-evaluated per directory right before deletion, not only when the scan is collected.</p>
+  </section>
+
+  <section id="install" class="section">
+    <h2><span class="accent-rule"></span> Install</h2>
+
+    <h3 class="subhead">Requirements</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Route</th><th>Needs</th></tr></thead>
+        <tbody>
+          <tr><td>Prebuilt archive</td><td>macOS 11+ · Linux (glibc) · Windows 10+. Nothing else.</td></tr>
+          <tr><td><code>cargo install</code></td><td>Rust 1.88 or newer, from <a href="https://rustup.rs" target="_blank" rel="noreferrer">rustup.rs</a>.</td></tr>
+          <tr><td>From source</td><td>Rust 1.88+, a C toolchain, and git.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cards three">
+      <article class="card c-blue">
+        <h3>Cargo</h3>
+        <p>The shortest path, and the one <code>--update</code> keeps fresh.</p>
+        <div class="mini-code"><code>cargo install dsopt</code><button class="copy" data-copy="cargo install dsopt">copy</button></div>
+      </article>
+      <article class="card c-cyan">
+        <h3>Prebuilt binaries</h3>
+        <p>macOS (Apple Silicon and Intel), Linux x64/ARM64, and Windows x64 archives, with SHA256SUMS,
+           attached to every release.</p>
+        <a class="card-link" href="https://github.com/handyutils/dsopt/releases/latest" target="_blank" rel="noreferrer">Browse releases ↗</a>
+      </article>
+      <article class="card c-violet">
+        <h3>From source</h3>
+        <p>Clone and install into your cargo bin, or build a debug binary and keep developing.</p>
+        <div class="mini-code"><code>git clone https://github.com/handyutils/dsopt</code><button class="copy" data-copy="git clone https://github.com/handyutils/dsopt &amp;&amp; cd dsopt &amp;&amp; cargo build">copy</button></div>
+      </article>
+    </div>
+
+    <h3 class="subhead">Install from source, step by step</h3>
+    <div class="codeblock">
+      <div class="codeblock-head"><span>shell</span><button class="copy" data-copy-target="source-code">copy</button></div>
+      <pre id="source-code"><code>git clone https://github.com/handyutils/dsopt
+cd dsopt
+
+cargo build                 <span class="c"># debug binary at target/debug/dsopt</span>
+cargo test                  <span class="c"># unit + integration tests</span>
+cargo install --path .      <span class="c"># install this working copy into ~/.cargo/bin</span></code></pre>
+    </div>
+
+    <h3 class="subhead">Updating</h3>
+    <div class="codeblock">
+      <div class="codeblock-head"><span>shell</span><button class="copy" data-copy-target="update-code">copy</button></div>
+      <pre id="update-code"><code>dsopt --update             <span class="c"># check crates.io, reinstall when newer</span>
+dsopt --update --force     <span class="c"># reinstall even when already current</span>
+
+<span class="c"># or, without Rust on PATH</span>
+cargo install dsopt --force</code></pre>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div>
+    <p class="footer-brand">dsopt</p>
+    <p class="footer-note">Part of <a href="https://handyutils.github.io/" target="_blank" rel="noreferrer">HandyUtils</a> — small terminal tools that do one job properly.</p>
+  </div>
+  <div class="footer-links">
+    <a href="https://github.com/handyutils/dsopt" target="_blank" rel="noreferrer">Repository</a>
+    <a href="https://crates.io/crates/dsopt" target="_blank" rel="noreferrer">crates.io</a>
+    <a href="https://docs.rs/dsopt" target="_blank" rel="noreferrer">docs.rs</a>
+    <a href="https://github.com/handyutils/dsopt/releases/latest" target="_blank" rel="noreferrer">Releases</a>
+    <a href="https://github.com/handyutils/dsopt/blob/main/LICENSE" target="_blank" rel="noreferrer">MIT License</a>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('.copy').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var target = button.getAttribute('data-copy-target');
+      var text = target
+        ? document.getElementById(target).innerText
+        : button.getAttribute('data-copy');
+      navigator.clipboard.writeText(text).then(function () {
+        var original = button.textContent;
+        button.textContent = 'copied ✓';
+        button.classList.add('done');
+        setTimeout(function () {
+          button.textContent = original;
+          button.classList.remove('done');
+        }, 1400);
+      });
+    });
+  });
+</script>
+</body>
+</html>
